@@ -1,4 +1,4 @@
-// Generated from F:/Estudio/Universidad/4to a�o/Complementos de Compilaci�n/09 Trabajo de Edelvi/c-project/src\CLang.g4 by ANTLR 4.7.2
+// Generated from C:/Users/Aice/IdeaProjects/c-project/src\CLang.g4 by ANTLR 4.7.2
 package abstractInterpreter;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -43,17 +43,17 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitArrayDeclaration(CLangParser.ArrayDeclarationContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CLangParser#variableWithExpDeclaration}.
+	 * Visit a parse tree produced by {@link CLangParser#varWithExpDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitVariableWithExpDeclaration(CLangParser.VariableWithExpDeclarationContext ctx);
+	T visitVarWithExpDeclaration(CLangParser.VarWithExpDeclarationContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CLangParser#variableWithoutExpDeclaration}.
+	 * Visit a parse tree produced by {@link CLangParser#varWithoutExpDeclaration}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitVariableWithoutExpDeclaration(CLangParser.VariableWithoutExpDeclarationContext ctx);
+	T visitVarWithoutExpDeclaration(CLangParser.VarWithoutExpDeclarationContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CLangParser#functionDeclaration}.
 	 * @param ctx the parse tree
@@ -115,12 +115,6 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPrintfStatement(CLangParser.PrintfStatementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CLangParser#formatString}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitFormatString(CLangParser.FormatStringContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link CLangParser#scanfStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -146,40 +140,12 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprUnaryOp(CLangParser.ExprUnaryOpContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code ExprMulDivMod}
+	 * Visit a parse tree produced by the {@code ExprArit}
 	 * labeled alternative in {@link CLangParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitExprMulDivMod(CLangParser.ExprMulDivModContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code ExprCnt}
-	 * labeled alternative in {@link CLangParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprCnt(CLangParser.ExprCntContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code ExprParenthesis}
-	 * labeled alternative in {@link CLangParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprParenthesis(CLangParser.ExprParenthesisContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code ExprEq}
-	 * labeled alternative in {@link CLangParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprEq(CLangParser.ExprEqContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code ExprAddSub}
-	 * labeled alternative in {@link CLangParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitExprAddSub(CLangParser.ExprAddSubContext ctx);
+	T visitExprArit(CLangParser.ExprAritContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ExprAnd}
 	 * labeled alternative in {@link CLangParser#expression}.
@@ -194,6 +160,13 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprFunctionCall(CLangParser.ExprFunctionCallContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ExprCnt}
+	 * labeled alternative in {@link CLangParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprCnt(CLangParser.ExprCntContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ExprRel}
 	 * labeled alternative in {@link CLangParser#expression}.
@@ -216,6 +189,13 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprArrayIndex(CLangParser.ExprArrayIndexContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code ExprParenthesis}
+	 * labeled alternative in {@link CLangParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprParenthesis(CLangParser.ExprParenthesisContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code ExprAssignment}
 	 * labeled alternative in {@link CLangParser#expression}.
 	 * @param ctx the parse tree
@@ -229,6 +209,34 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprId(CLangParser.ExprIdContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code IntCnt}
+	 * labeled alternative in {@link CLangParser#constant}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIntCnt(CLangParser.IntCntContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code CharCnt}
+	 * labeled alternative in {@link CLangParser#constant}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCharCnt(CLangParser.CharCntContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code FloatCnt}
+	 * labeled alternative in {@link CLangParser#constant}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFloatCnt(CLangParser.FloatCntContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code StrLCnt}
+	 * labeled alternative in {@link CLangParser#constant}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStrLCnt(CLangParser.StrLCntContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CLangParser#functionCall}.
 	 * @param ctx the parse tree

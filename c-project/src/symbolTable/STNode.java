@@ -2,31 +2,41 @@ package symbolTable;
 
 public class STNode<T> implements Comparable<T> {
     private STNodeType type;
-    private T value = null;
-    private Scope nodeScope = null;
+    private Scope scope;
+    private T value;
 
-
-    public STNode(STNodeType type, T value) {
-        this.type = type;
-        this.value = value;
-    }
+    //No puedo crear un STNode por su valor o por su scope  pq C no infiere tipos
 
     public STNode(STNodeType type) {
         this.type = type;
+        this.value = null;
+        this.scope = null;
     }
 
-    public STNode(STNodeType type, Scope nodeScope) {
-        this(type);
-        this.nodeScope = nodeScope;
+    
+    public STNode(STNodeType type, T value) {
+        this.type = type;
+        this.value = value;
+        this.scope = null;
     }
 
-    public STNode(STNodeType type, T value, Scope nodeScope) {
-        this(type, value);
-        this.nodeScope = nodeScope;
+   
+    public STNode(STNodeType type, Scope scope) {
+        this.type = type;
+        this.value = null;
+        this.scope = scope;
+    }
+
+    public STNode(STNodeType type, T value, Scope scope) {
+        this.type = type;
+        this.value = value;
+        this.scope = scope;
     }
 
     public STNode(STNode node) {
-        this(node.getType(), (T) node.getValue(), node.getNodeScope());
+        this.type = node.type;
+        this.value = (T) node.value;
+        this.scope = node.scope;
     }
 
     public T getValue() {
@@ -37,20 +47,20 @@ public class STNode<T> implements Comparable<T> {
         this.value = value;
     }
 
-    public Scope getNodeScope() {
-        return nodeScope;
-    }
-
-    public void setNodeScope(Scope nodeScope) {
-        this.nodeScope = nodeScope;
-    }
-
     public STNodeType getType() {
         return type;
     }
 
     public void setType(STNodeType type) {
         this.type = type;
+    }
+
+    public Scope getScope() {
+        return scope;
+    }
+
+    public void setScope(Scope scope) {
+        this.scope = scope;
     }
 
     @Override

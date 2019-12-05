@@ -9,7 +9,7 @@ public class SymbolTable<Symbol> {
         symbols = new HashMap<>();
     }
 
-    public Symbol get(String id) {
+    public  Symbol get(String id) {
         return symbols.get(id);
     }
 
