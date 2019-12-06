@@ -11,19 +11,20 @@ include :   INCLUDE '"' (ID | PATH) '"'
 
 definition  :   functionDefinition
             |   functionDeclaration
-            |   declaration //ya
+            |   declaration
             ;
 
-//Cambiado, porque cuando se tuviera tipo var1, tipo var2 = exp1, no iba a poder saber a quien pertenece exp1
-// de la forma en que estaba
-//var with type ()
+declaration :   TYPE (varWithExpDeclaration | varWithoutExpDeclaration) (',' (varWithoutExpDeclaration |varWithExpDeclaration))* ';'                                            #VarDeclaration
 
-declaration : TYPE  (variableWithExpDeclaration|variableWithoutExpDeclaration)(',' (variableWithoutExpDeclaration|variableWithExpDeclaration))* ';' #VarDeclaration // int a, d= c++
-            |   TYPE ID '[' expression ']' (',' ID '[' expression ']')* ';'  #ArrayDeclaration// int a[], b[] ya
+            |   TYPE ID '[' expression ']' (',' ID '[' expression ']')* ';'                                             #ArrayDeclaration
+
             ;
-variableWithExpDeclaration: ID  '=' expression  ; //ya
 
-variableWithoutExpDeclaration: ID ; //ya
+varWithExpDeclaration:   ID  '=' expression ;
+
+varWithoutExpDeclaration:     ID ;
+
+
 
 functionDeclaration : (TYPE | 'void') ID '(' (parameterList | typeList)? ')' ';'; // int max(int a, int b); o int f(int, double);
 
@@ -57,45 +58,73 @@ returnStatement :   'return' expression?;
 
 breakStatement  :   BREAK | CONTINUE;
 
+//NEW
+printfStatement :   PRINTF '('  expression  ')';
 
-printfStatement :   PRINTF '(' expression ')';
-
-formatString    :    FORMAT_STR;
-
-scanfStatement:   SCANF ('(' formatString',' argumentScanf ')') ;
+scanfStatement:   SCANF '(' argumentScanf ')' ;
 
 argumentScanf:  '&'?ID(',''&'?ID)*;
 
+//Firs printf
+/* printfStatement :   PRINTF '(' format ')';
+
+   format: formatString ',' argumentsList
+           |  commonStr
+           ;
 
 
+   formatString    :    FORMAT_STR;
+
+   argumentsList:  argument (','argument)*;
+
+   argument   :  CONSTANT
+              | ID
+              ;
+
+   commonStr: COMMON_STR ;
+
+   scanfStatement:   SCANF ('(' formatString',' argumentScanf ')') ;
+
+   argumentScanf:  '&'?ID(',''&'?ID)*;
+*/
 expressionList : expression ( ',' expression)* ;
 
-// Cambiado para que reconozca los arreglos
-expression :    '(' expression ')'                              #ExprParenthesis
-            |   functionCall                                    #ExprFunctionCall
-            |   assignmentExpression                            #ExprAssignment
-            |   arrayIndexExpression                            #ExprArrayIndex
-            |   expression op=('*'|'/'|'%') expression          #ExprMulDivMod
-            |   expression op=('+'|'-') expression              #ExprAddSub
-            |   expression op=('>'|'>='|'<'|'<=') expression    #ExprRel
-            |   expression op=('=='|'!=')  expression           #ExprEq
-            |   expression '&&' expression                      #ExprAnd
-            |   expression '||' expression                      #ExprOr
-            |   unaryOperator ID                                #ExprUnaryOp
-            |   ID unaryOperator                                #ExprUnaryOp
-            |   CONSTANT                                        #ExprCnt
-            |   ID                                              #ExprId
+expression :    '(' expression ')'                                         #ExprParenthesis
+            |   functionCall                                               #ExprFunctionCall
+            |   assignmentExpression                                       #ExprAssignment
+            |   arrayIndexExpression                                       #ExprArrayIndex
+            |   left=expression op=('*'|'/'|'%') right=expression          #ExprArit
+            |   left=expression op=('+'|'-') right=expression              #ExprArit
+            |   left=expression op=('>'|'>='|'<'|'<=') right=expression    #ExprRel
+            |   left=expression op=('=='|'!=')  right=expression           #ExprRel
+            |   expression '&&' expression                                 #ExprAnd
+            |   expression '||' expression                                 #ExprOr
+            |   unaryOperator ID                                           #ExprUnaryOp
+            |   ID unaryOperator                                           #ExprUnaryOp
+            |   constant                                                   #ExprCnt
+            |   ID                                                         #ExprId
+            ;
+/* int a[expression], b[]
+expression -- aarayIndexExp = id [expre]
+
+assigExp-- unaryExp opAsig expression
+unaryExp-- id | arrayIndexExp
+
+a[5] = 6+4*/
+constant    :  INT_CONSTANT                                                #IntCnt
+            |  CHAR_CONSTANT                                               #CharCnt
+            |  FLOAT_CONSTANT                                              #FloatCnt
+            |  STRING_LITERAL                                              #StrLCnt
             ;
 
-functionCall : ID '(' (expression ( ',' expression)*)? ')' ;
+functionCall : ID '(' expressionList? ')' ;
 
-assignmentExpression : unaryExpression assignmentOperator expression ; //ya
+assignmentExpression : unaryExpression assignmentOperator expression;
 
-unaryExpression : ID | arrayIndexExpression; //ya
+unaryExpression : ID | arrayIndexExpression;
+arrayIndexExpression:  ID '[' expression ']'  ;
 
-arrayIndexExpression:  ID '[' expression ']'  ; //ya
-
-assignmentOperator: '=' | '*=' | '/=' | '%=' | '+=' | '-=' | '&=' | '^=' | '|=' ;
+assignmentOperator: '=' | '*=' | '/=' | '%=' | '+=' | '-=' | '&=' | '^=' | '|=' |;
 
 conditionalExpression : expression
             |   expression '?' expression ':' conditionalExpression;
@@ -122,28 +151,24 @@ SCANF   :  'scanf';
 // Add char* type declarations
 
 //Rules for printf and scanf format
-FORMAT_STR: '"' STR_OUT? SPECIF+ STR_OUT?'"'
+/*FORMAT_STR: '"' STR_OUT? SPECIF+ STR_OUT?'"'
          |  '"' STR_OUT? SPECIF_FLAGS+ STR_OUT? '"'
          |  '"' STR_OUT? SPECIF_FLAGS_WIDTH+ STR_OUT? '"'
          |  '"' STR_OUT? SPECIF_FLAGS_WIDTH_PRECI+ STR_OUT? '"'
          |  '"' STR_OUT? SPECIF_FLAGS_WIDTH_PRECI_LEN+ STR_OUT? '"'
          ;
 
-
+*/
 //PC ( (SIGN | WS | NU | Z)? (INT_CONSTANT | AS)? ('.'(INT_CONSTANT | AS))? LEN? ) SPEC;
-
+/*
 SPECIF:   PC SPEC ;
 SPECIF_FLAGS: PC FLAGS? SPEC;
 SPECIF_FLAGS_WIDTH: PC FLAGS? WIDTH? SPEC;
 SPECIF_FLAGS_WIDTH_PRECI: PC FLAGS? WIDTH? PRECI? SPEC;
 SPECIF_FLAGS_WIDTH_PRECI_LEN: PC FLAGS? WIDTH? PRECI? LEN? SPEC;
+*/
+//COMMON_STR: '"' STR_OUT '"';
 
-
-CONSTANT :      INT_CONSTANT
-            |   CHAR_CONSTANT
-            |   FLOAT_CONSTANT
-            |   STRING_LITERAL
-            ;
 
 INT_CONSTANT :  OCT_CONSTANT
              |  HEX_CONSTANT
@@ -194,6 +219,8 @@ DEC_OPERATOR : '--';
 ID :    LETTER LET_DIGIT*;
 
 PATH : ID '.' ID;
+//new fragment added to the var declaration
+
 
 fragment
 PC  :   '%';
