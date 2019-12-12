@@ -85,6 +85,12 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTypeList(CLangParser.TypeListContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link CLangParser#statementCombination}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStatementCombination(CLangParser.StatementCombinationContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link CLangParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -96,6 +102,12 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitCompoundStatement(CLangParser.CompoundStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CLangParser#declarCombination}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDeclarCombination(CLangParser.DeclarCombinationContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CLangParser#returnStatement}.
 	 * @param ctx the parse tree
@@ -133,12 +145,12 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpressionList(CLangParser.ExpressionListContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code ExprUnaryOp}
+	 * Visit a parse tree produced by the {@code ExprUnaryOpPost}
 	 * labeled alternative in {@link CLangParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitExprUnaryOp(CLangParser.ExprUnaryOpContext ctx);
+	T visitExprUnaryOpPost(CLangParser.ExprUnaryOpPostContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ExprArit}
 	 * labeled alternative in {@link CLangParser#expression}.
@@ -160,6 +172,13 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExprFunctionCall(CLangParser.ExprFunctionCallContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ExprUnaryOpPre}
+	 * labeled alternative in {@link CLangParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExprUnaryOpPre(CLangParser.ExprUnaryOpPreContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code ExprCnt}
 	 * labeled alternative in {@link CLangParser#expression}.
@@ -292,9 +311,15 @@ public interface CLangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitForStatement(CLangParser.ForStatementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CLangParser#unaryOperator}.
+	 * Visit a parse tree produced by {@link CLangParser#condExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitUnaryOperator(CLangParser.UnaryOperatorContext ctx);
+	T visitCondExpression(CLangParser.CondExpressionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CLangParser#iterExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIterExpression(CLangParser.IterExpressionContext ctx);
 }

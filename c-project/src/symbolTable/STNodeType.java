@@ -1,7 +1,7 @@
 package symbolTable;
 
 public enum STNodeType {
-    RESERVED_WORD("rw"), INT("i"), FLOAT("f"), DOUBLE("d"), CHAR("c"),  SHORT("sh"), LONG( "l") ;
+    RESERVED_WORD("rw"), CHAR("c"), SHORT("sh"), INT("i"), LONG( "l"), FLOAT("f"), DOUBLE("d");
 
     private final String value;
 

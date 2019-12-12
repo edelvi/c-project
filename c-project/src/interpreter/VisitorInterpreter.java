@@ -5,24 +5,34 @@ import symbolTable.*;
 
 import symbolTable.STNode;
 import symbolTable.STNodeType;
+
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+
+import java.util.*;
+
 import abstractInterpreter.CLangBaseVisitor;
 
+import javax.swing.plaf.nimbus.State;
 import javax.swing.plaf.synth.SynthOptionPaneUI;
 
 import static abstractInterpreter.CLangParser.*;
 
 
-
 public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
 
     private HashMap<String, ParseTree> userMethods;
-    private Scope<STNode> globalScope = new Scope<>(), actualScope = globalScope;
+    private Scope<STNode> globalScope, actualScope;
+    private boolean breakVis = false;
+    private boolean continueVisit = false;
 
+
+    public VisitorInterpreter() {
+        globalScope = new Scope<>();
+        actualScope = new Scope<>();
+        userMethods = new HashMap<>();
+        actualScope.parent = globalScope;
+    }
 
 
     @Override
@@ -33,10 +43,11 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
         return null;
     }
 
+    //Checked
     @Override
     public STNode visitPrintfStatement(PrintfStatementContext ctx) {
 
-        System.out.println("Salida printf = "+ctx.expression().getText());
+        System.out.println("Salida printf = " + ctx.expression().getText());
         System.out.println(visit(ctx.expression()));
         return null;
     }
@@ -51,72 +62,54 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
         int v = 0;
         System.out.println("childrens of ArgumentsScanf " + n);
         //getToken(CLangParser.ID, i
-       for (int i = 0; i < n; i++) {
-           //System.out.println(ctx.argumentScanf().getChild(i).toString().charAt(0));
-           if(ctx.argumentScanf().getChild(i).toString().charAt(0) != ',') {
-               //System.out.println("Veces que entra");
-               //System.out.println("id" + ctx.argumentScanf().ID(v).toString());
-               TerminalNode id = ctx.argumentScanf().ID(v);
-              // System.out.println("ARGS" + id.getText());
-               String line = s.nextLine().trim();
-               try {//int
-                   node = new STNode(STNodeType.INT, Integer.parseInt(line));
-               } catch (java.lang.NumberFormatException exInt) {
-                   try {//testing if the given input is a float
-                       node = new STNode(STNodeType.FLOAT, Float.parseFloat(line));
-                   } catch (java.lang.NumberFormatException exFloat) {
-                       try {//testing if the given input is a Double
-                           node = new STNode(STNodeType.DOUBLE, Double.parseDouble(line));
-                       } catch (java.lang.NumberFormatException exDouble) {
-                           try {//testing if the given input is a Short
+        for (int i = 0; i < n; i++) {
+            //System.out.println(ctx.argumentScanf().getChild(i).toString().charAt(0));
+            if (ctx.argumentScanf().getChild(i).toString().charAt(0) != ',') {
+                //System.out.println("Veces que entra");
+                //System.out.println("id" + ctx.argumentScanf().ID(v).toString());
+                TerminalNode id = ctx.argumentScanf().ID(v);
+                // System.out.println("ARGS" + id.getText());
+                String line = s.nextLine().trim();
+                try {//int
+                    node = new STNode(STNodeType.INT, Integer.parseInt(line));
+                } catch (java.lang.NumberFormatException exInt) {
+                    try {//testing if the given input is a char
+                        node = new STNode(STNodeType.CHAR, line);
+                    } catch (java.lang.NumberFormatException exFloat) {
+                        try {//testing if the given input is a short
+                            node = new STNode(STNodeType.SHORT, Short.parseShort(line));
+                        } catch (java.lang.NumberFormatException exDouble) {
+                            try {//testing if the given input is a float
+                                node = new STNode(STNodeType.LONG, Long.parseLong(line));
+                            } catch (java.lang.NumberFormatException exShort) {
+                                try {//testing if the given input is a long
+                                    node = new STNode(STNodeType.FLOAT, Float.parseFloat(line));
+                                } catch (java.lang.NumberFormatException exLong) {
+                                    node = new STNode(STNodeType.DOUBLE, Double.parseDouble(line));
+                                }
+                            }
+                        }
+                    }
 
-                               node = new STNode(STNodeType.SHORT, Short.parseShort(line));
-                           } catch (java.lang.NumberFormatException exShort) {
-                               try {//testing if the given input is a long
-                                   node = new STNode(STNodeType.LONG, Long.parseLong(line));
-                               } catch (java.lang.NumberFormatException exLong) {
-                                   node = new STNode(STNodeType.CHAR, line);
-                               }
-                           }
-                       }
-                   }
+                }
+                actualScope.put(id.getText(), node);
+                System.out.println("Valor guardado en el scope para variable: " + id.getText() + " Valor: " + actualScope.get(id.getText()).getValue().toString() + "Type" + actualScope.get(id.getText()).getType().toString());
+                ++v;
+            } else
+                continue;
 
-               }
-               actualScope.put(id.getText(), node);
-               System.out.println("Valor guardado en el scope para variable: " + id.getText() + " Valor: " + actualScope.get(id.getText()).getValue().toString());
-               ++v;
-           } else
-               continue;
-
-           }
+        }
 
         return null;
 
     }
-
-    //Test Break and Continue (These visit still doesn't work properly)
-    @Override
-    public STNode visitBreakStatement(CLangParser.BreakStatementContext ctx) {
-        System.out.println("BreakStatement visited");
-        if (ctx.BREAK() != null) {
-
-            System.out.println("Parent text: --- " + ctx.getParent().getText());
-            /*
-            for (int i = 0; i < ctx.getParent().getChildCount(); i++){
-                System.out.println(ctx.getParent().getChild(i).getText());
-            }*/
-
-        } else
-            visit(ctx.CONTINUE());
-        return null;
-    }
-
 
     //Checked
     @Override
     public STNode visitWhileStatement(WhileStatementContext ctx) {
         System.out.println("WhileStatement Visited");
         STNode exp = visit(ctx.expression());
+
         while (!(exp.getValue().equals(0))) {
             visit(ctx.statement());
             exp = visit(ctx.expression());
@@ -124,6 +117,22 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
         return null;
     }
 
+    //Checked
+    @Override
+    public STNode visitForStatement(CLangParser.ForStatementContext ctx) {
+        //System.out.println("For Statement");
+        visit(ctx.expressionList());
+
+        while (!(visit(ctx.condExpression()).getValue().equals(0))) {
+            visit(ctx.statement());
+            if (breakVis)
+                break;
+            breakVis = false;
+            visit(ctx.iterExpression());
+        }
+
+        return null;
+    }
 
     //Checked
     @Override
@@ -132,7 +141,7 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
         return visit(ctx.expression());
     }
 
-    //Checked (but we see the other version )
+    //Checked
     @Override
     public STNode visitExprCnt(CLangParser.ExprCntContext ctx) {
         System.out.println("[Constante visited] ");
@@ -146,23 +155,26 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
         System.out.println("IntConstant visited");
         return new STNode(STNodeType.INT, Integer.parseInt(ctx.INT_CONSTANT().getText()));
     }
+
     //Checked
     @Override
     public STNode visitCharCnt(CLangParser.CharCntContext ctx) {
         System.out.println("CharConstant visited");
-        return new STNode(STNodeType.CHAR, ctx.CHAR_CONSTANT().getText());
+        return new STNode(STNodeType.CHAR, (char) (ctx.CHAR_CONSTANT().getText()).charAt(1));
     }
+
     //Checked
     @Override
     public STNode visitFloatCnt(CLangParser.FloatCntContext ctx) {
         System.out.println("FloatConstant visited");
-        return new STNode(STNodeType.FLOAT, ctx.FLOAT_CONSTANT().getText());
+        return new STNode(STNodeType.FLOAT, Float.parseFloat(ctx.FLOAT_CONSTANT().getText()));
     }
+
     //When a string constant is visited, we don't get an STNode because String isn't a C data type
     @Override
-    public STNode visitStrLCnt(CLangParser.StrLCntContext ctx){
+    public STNode visitStrLCnt(CLangParser.StrLCntContext ctx) {
         System.out.println("StrLiteralConstant visited");
-        System.out.println(ctx.STRING_LITERAL().getText().substring(1,ctx.STRING_LITERAL().getText().length()-1));
+        System.out.println(ctx.STRING_LITERAL().getText().substring(1, ctx.STRING_LITERAL().getText().length() - 1));
         return null;
     }
 
@@ -232,9 +244,17 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
 
     //Checked
     @Override
+    public STNode visitExprOr(ExprOrContext ctx) {
+        STNode node_1 = visit(ctx.expression(0));
+        STNode node_2 = visit(ctx.expression(1));
+
+        return new STNode(STNodeType.INT, ((int) node_1.getValue() != 0 || (int) node_2.getValue() != 0) ? 1 : 0);
+    }
+
+    //Checked
+    @Override
     public STNode visitIfStatement(IfStatementContext ctx) {
-        System.out.println("Visiting IfStatement");
-        System.out.println("Children of IfStatement " + ctx.getChildCount());
+//        System.out.println("Visiting IfStatement");
         STNode exp = visit(ctx.expression());
         int value = (int) exp.getValue();
 
@@ -259,23 +279,83 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
         String op = ctx.op.getText();
         switch (op.charAt(0)) {
             case '*': {
-                rest = (((Number) left.getValue()).doubleValue() * ((Number) right.getValue()).doubleValue());
+                if (left.getType() == STNodeType.CHAR && right.getType() == STNodeType.CHAR) {
+                    rest = (Double.valueOf(left.getValue().toString().charAt(0)) * Double.valueOf(right.getValue().toString().charAt(0)));
+                } else {
+                    if (left.getType() == STNodeType.CHAR) {
+                        rest = (Double.valueOf(left.getValue().toString().charAt(0)) * ((Number) right.getValue()).doubleValue());
+                    } else {
+                        if (right.getType() == STNodeType.CHAR) {
+                            rest = (((Number) left.getValue()).doubleValue() * Double.valueOf(right.getValue().toString().charAt(0)));
+                        } else {
+                            rest = (((Number) left.getValue()).doubleValue() * ((Number) right.getValue()).doubleValue());
+                        }
+                    }
+                }
                 break;
             }
             case '/': {
-                rest = ((Number) left.getValue()).doubleValue() / ((Number) right.getValue()).doubleValue();
+                if (left.getType() == STNodeType.CHAR && right.getType() == STNodeType.CHAR) {
+                    rest = (Double.valueOf(left.getValue().toString().charAt(0)) / Double.valueOf(right.getValue().toString().charAt(0)));
+                } else {
+                    if (left.getType() == STNodeType.CHAR) {
+                        rest = (Double.valueOf(left.getValue().toString().charAt(0)) / ((Number) right.getValue()).doubleValue());
+                    } else {
+                        if (right.getType() == STNodeType.CHAR) {
+                            rest = (((Number) left.getValue()).doubleValue() / Double.valueOf(right.getValue().toString().charAt(0)));
+                        } else {
+                            rest = (((Number) left.getValue()).doubleValue() / ((Number) right.getValue()).doubleValue());
+                        }
+                    }
+                }
                 break;
             }
             case '%': {
-                rest = ((Number) left.getValue()).doubleValue() % ((Number) right.getValue()).doubleValue();
+                if (left.getType() == STNodeType.CHAR && right.getType() == STNodeType.CHAR) {
+                    rest = (Double.valueOf(left.getValue().toString().charAt(0)) % Double.valueOf(right.getValue().toString().charAt(0)));
+                } else {
+                    if (left.getType() == STNodeType.CHAR) {
+                        rest = (Double.valueOf(left.getValue().toString().charAt(0)) % ((Number) right.getValue()).doubleValue());
+                    } else {
+                        if (right.getType() == STNodeType.CHAR) {
+                            rest = (((Number) left.getValue()).doubleValue() % Double.valueOf(right.getValue().toString().charAt(0)));
+                        } else {
+                            rest = (((Number) left.getValue()).doubleValue() % ((Number) right.getValue()).doubleValue());
+                        }
+                    }
+                }
                 break;
             }
             case '+': {
-                rest = ((Number) left.getValue()).doubleValue() + ((Number) right.getValue()).doubleValue();
+                if (left.getType() == STNodeType.CHAR && right.getType() == STNodeType.CHAR) {
+                    rest = (Double.valueOf(left.getValue().toString().charAt(0)) + Double.valueOf(right.getValue().toString().charAt(0)));
+                } else {
+                    if (left.getType() == STNodeType.CHAR) {
+                        rest = (Double.valueOf(left.getValue().toString().charAt(0)) + ((Number) right.getValue()).doubleValue());
+                    } else {
+                        if (right.getType() == STNodeType.CHAR) {
+                            rest = (((Number) left.getValue()).doubleValue() + Double.valueOf(right.getValue().toString().charAt(0)));
+                        } else {
+                            rest = (((Number) left.getValue()).doubleValue() + ((Number) right.getValue()).doubleValue());
+                        }
+                    }
+                }
                 break;
             }
             case '-': {
-                rest = ((Number) left.getValue()).doubleValue() - ((Number) right.getValue()).doubleValue();
+                if (left.getType() == STNodeType.CHAR && right.getType() == STNodeType.CHAR) {
+                    rest = (Double.valueOf(left.getValue().toString().charAt(0)) - Double.valueOf(right.getValue().toString().charAt(0)));
+                } else {
+                    if (left.getType() == STNodeType.CHAR) {
+                        rest = (Double.valueOf(left.getValue().toString().charAt(0)) - ((Number) right.getValue()).doubleValue());
+                    } else {
+                        if (right.getType() == STNodeType.CHAR) {
+                            rest = (((Number) left.getValue()).doubleValue() - Double.valueOf(right.getValue().toString().charAt(0)));
+                        } else {
+                            rest = (((Number) left.getValue()).doubleValue() - ((Number) right.getValue()).doubleValue());
+                        }
+                    }
+                }
                 break;
             }
 
@@ -292,17 +372,15 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
                 } else {
                     if (((left.getType() == STNodeType.INT) || (left.getType() == STNodeType.CHAR)) || ((right.getType() == STNodeType.INT) || (right.getType() == STNodeType.CHAR))) {
                         return new STNode(STNodeType.INT, (int) rest);
+                    } else {
+                        return new STNode(STNodeType.SHORT, (short) rest);
                     }
 
                 }
             }
         }
 
-
-        return new STNode(STNodeType.SHORT, (short) rest);
-
     }
-
 
     //Checked
     @Override
@@ -333,46 +411,110 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
         actualScope.put(varId, newNode);
 
 
-
-        System.out.println("VarWithoutExpDeclaration visited");
+       // System.out.println("VarWithoutExpDeclaration visited");
         return null;
     }
 
     //Checked
     @Override
     public STNode visitVarWithExpDeclaration(VarWithExpDeclarationContext ctx) {
-
-        Scope thisScope;
         String varId;
-        STNode newNode;
-        thisScope = actualScope;
+        STNode newNode = null;
         varId = ctx.ID().getText();
-        newNode = null;
         STNode node = visit(ctx.expression());
+
+        Number aux = 0;
         VarDeclarationContext parent_cont = (VarDeclarationContext) ctx.getParent();
         switch (parent_cont.TYPE().getText()) {
             case "short":
-                newNode = new STNode(STNodeType.SHORT, (short) node.getValue(), thisScope);
+                if (node.getType() == STNodeType.CHAR) {//saving the numerical value of a character
+                    // newNode = new STNode(STNodeType.SHORT, Short.parseShort(node.getValue().toString().charAt(0)), thisScope);
+                } else {
+                    //Integer cast to the resulting type of the given expression
+                    if (node.getType().compareTo(STNodeType.SHORT) > 0) {
+                        if (node.getType() == STNodeType.INT) {
+                            aux = Integer.valueOf((int) node.getValue()).shortValue();
+                        } else {
+                            if (node.getType() == STNodeType.LONG) {
+                                aux = Long.valueOf((long) node.getValue()).shortValue();
+                            } else {
+                                if (node.getType() == STNodeType.FLOAT) {
+                                    aux = Float.valueOf((float) node.getValue()).shortValue();
+                                } else
+                                    aux = Double.valueOf((double) node.getValue()).shortValue();
+                            }
+                        }
+
+                        newNode = new STNode(STNodeType.SHORT, aux, actualScope);
+                    } else
+                        newNode = new STNode(STNodeType.SHORT, Short.parseShort(node.getValue().toString()), actualScope);
+                }
                 break;
             case "int":
-                newNode = new STNode(STNodeType.INT, (int) node.getValue(), thisScope);
+
+                if (node.getType() == STNodeType.CHAR) {//saving the numerical value of a character
+                    newNode = new STNode(STNodeType.INT, Integer.valueOf(node.getValue().toString().charAt(0)), actualScope);
+                } else {
+                    //Integer cast over the resulting type of the given expression
+                    if (node.getType().compareTo(STNodeType.INT) > 0) {//cases when i have to specify the donwn casting
+                        if (node.getType() == STNodeType.FLOAT)
+                            aux = Float.valueOf((float) node.getValue()).intValue();
+                        else {
+                            if (node.getType() == STNodeType.LONG)
+                                aux = Long.valueOf((long) node.getValue()).intValue();
+                            else
+                                aux = Double.valueOf((double) node.getValue()).intValue();
+                        }
+                        newNode = new STNode(STNodeType.INT, aux, actualScope);
+                    } else {
+                        //Here is included the cast to a Short type(because short is shorter than Int, no down casting needed)
+                        newNode = new STNode(STNodeType.INT, Integer.valueOf(node.getValue().toString()), actualScope);
+                    }
+                }
                 break;
             case "long":
-                newNode = new STNode(STNodeType.LONG, (long) node.getValue(), thisScope);
+                if (node.getType() == STNodeType.CHAR) {//saving the numerical value of a character
+                    newNode = new STNode(STNodeType.LONG, Long.valueOf(node.getValue().toString().charAt(0)), actualScope);
+                } else {
+                    //Integer cast to the resulting type of the given expression
+                    if (node.getType().compareTo(STNodeType.LONG) > 0) {
+                        if (node.getType() == STNodeType.FLOAT)
+                            aux = Float.valueOf((float) node.getValue()).longValue();
+                        else
+                            aux = Double.valueOf((double) node.getValue()).longValue();
+
+                        newNode = new STNode(STNodeType.LONG, aux, actualScope);
+                    } else
+                        newNode = new STNode(STNodeType.LONG, Long.valueOf(node.getValue().toString()), actualScope);
+                }
                 break;
             case "float":
-                newNode = new STNode(STNodeType.FLOAT, (float) node.getValue(), thisScope);
+                if (node.getType() == STNodeType.CHAR) {//saving the numerical value of a character
+                    newNode = new STNode(STNodeType.FLOAT, Float.valueOf(node.getValue().toString().charAt(0)), actualScope);
+                } else {
+                    //Integer cast to the resulting type of the given expression
+                    newNode = new STNode(STNodeType.FLOAT, Float.valueOf(node.getValue().toString()), actualScope);
+                }
                 break;
             case "double":
-                newNode = new STNode(STNodeType.DOUBLE, (double) node.getValue(), thisScope);
+                if (node.getType() == STNodeType.CHAR) {//saving the numerical value of a character
+                    newNode = new STNode(STNodeType.DOUBLE, Double.valueOf(node.getValue().toString().charAt(0)), actualScope);
+                } else {
+                    //Integer cast to the resulting type of the given expression
+                    newNode = new STNode(STNodeType.DOUBLE, Double.valueOf(node.getValue().toString()), actualScope);
+                }
                 break;
             case "char":
-                newNode = new STNode(STNodeType.CHAR, (char) node.getValue(), thisScope);
-                break;
-        }
-        thisScope.put(varId, newNode);
+                try {
+                    newNode = new STNode(STNodeType.CHAR, (char) node.getValue(), actualScope);
+                    break;
+                } catch (NumberFormatException ConvertionTypeExcep) {
 
-        System.out.println("VarWithExpDeclaration visited");
+                }
+        }
+        actualScope.put(varId, newNode);
+
+        //System.out.println("VarWithExpDeclaration visited");
         return null;
     }
 
@@ -416,517 +558,217 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
         return null;
     }
 
-
-    //It works but is pending to inprove the code in order to add more type checks
-    //These code is temporal
+    //Checked
     public STNode visitAssignmentExpression(AssignmentExpressionContext ctx) {
-
         System.out.println("visiting assignment expression");
         STNode exp = visit(ctx.expression());
         STNode node;
         Object exp_value = new Object();
         exp_value = exp.getValue();
         Object id_value = new Object();
-
+        STNodeType id_type;
         String id;
         String op = ctx.assignmentOperator().getText();
-        char type;
-        Number type_value_exp;//para simplificar los try catch
-        Number type_value_id;
+        double value = 0;
 
-        if (ctx.unaryExpression().ID() != null){
+        if (ctx.unaryExpression().ID() != null) {
             id_value = actualScope.get((ctx.unaryExpression().ID().getText())).getValue();
+            id_type = actualScope.get((ctx.unaryExpression().ID().getText())).getType();
             id = ctx.unaryExpression().ID().getText();
 
-            try {
-                 type_value_exp = (int) exp_value;
-                 type_value_id = (int) id_value;
-                 type = 'i';
-            } catch (java.lang.NumberFormatException extInt) {
-                try {
-                     type_value_exp = (double) exp_value;
-                     type_value_id = (double) id_value;
-                     type = 'd';
-                } catch (java.lang.NumberFormatException extDouble){
-                    try {
-                        type_value_exp = (long) exp_value;
-                        type_value_id = (long) id_value;
-                        type = 'l';
-                    } catch (java.lang.NumberFormatException extLong){
-                        type_value_exp = (float) exp_value;
-                        type_value_id = (float) id_value;
-                        type = 'f';
-                    }
+            if (id_type.compareTo(exp.getType()) > 0 || id_type.compareTo(exp.getType()) == 0) {
 
-                }
-
-            }
-
-
-            switch (op){
-                case "=": {
-                    actualScope.put(id, exp);
-                    System.out.println("test = " + exp.getValue().toString());
-                    break;
-                }
-                case "*=":{
-                    if (type == 'i'){
-                        node = new STNode(STNodeType.INT, (int)type_value_exp * (int)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test *= Int " + node.getValue().toString());
-                    }else if (type == 'd'){
-                        node = new STNode(STNodeType.DOUBLE, (double)type_value_exp * (double)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test *= Double " + node.getValue().toString());
-                    }else if (type == 'l'){
-                        node = new STNode(STNodeType.LONG, (long)type_value_exp * (long)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test *= Long " + node.getValue().toString());
-                    }else {
-                        node = new STNode(STNodeType.FLOAT, (float)type_value_exp * (float)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test *= Float " + node.getValue().toString());
-                    }
-                    break;
-                }
-                case "/=":{
-                    if (type == 'i'){
-                        node = new STNode(STNodeType.INT, (int)type_value_exp / (int)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test /= Int " + node.getValue().toString());
-                    }else if (type == 'd'){
-                        node = new STNode(STNodeType.DOUBLE, (double)type_value_exp / (double)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test /= Double " + node.getValue().toString());
-                    }else if (type == 'l'){
-                        node = new STNode(STNodeType.LONG, (long)type_value_exp / (long)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test /= Long " + node.getValue().toString());
-                    }else {
-                        node = new STNode(STNodeType.FLOAT, (float)type_value_exp / (float)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test /= Float " + node.getValue().toString());
-                    }
-                    break;
-                }
-                case "%=":{
-                    if (type == 'i'){
-                        node = new STNode(STNodeType.INT, (int)type_value_exp % (int)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test %= Int " + node.getValue().toString());
-                    }else if (type == 'd'){
-                        node = new STNode(STNodeType.DOUBLE, (double)type_value_exp % (double)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test %= Double " + node.getValue().toString());
-                    }else if (type == 'l'){
-                        node = new STNode(STNodeType.LONG, (long)type_value_exp % (long)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test %= Long " + node.getValue().toString());
-                    }else {
-                        node = new STNode(STNodeType.FLOAT, (float)type_value_exp % (float)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test %= Float " + node.getValue().toString());
-                    }
-                    break;
-                }
-                case "+=":{
-                    if (type == 'i'){
-                        node = new STNode(STNodeType.INT, (int)type_value_exp + (int)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test += Int " + node.getValue().toString());
-                    }else if (type == 'd'){
-                        node = new STNode(STNodeType.DOUBLE, (double)type_value_exp  + (double)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test += Double " + node.getValue().toString());
-                    }else if (type == 'l'){
-                        node = new STNode(STNodeType.LONG, (long)type_value_exp + (long)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test += Long " + node.getValue().toString());
-                    }else {
-                        node = new STNode(STNodeType.FLOAT, (float)type_value_exp + (float)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test += Float " + node.getValue().toString());
-                    }
-                    break;
-                }
-                case "-=":{
-                    if (type == 'i'){
-                        node = new STNode(STNodeType.INT, (int)type_value_exp - (int)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test -= Int " + node.getValue().toString());
-                    }else if (type == 'd'){
-                        node = new STNode(STNodeType.DOUBLE, (double)type_value_exp - (double)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test -= Double " + node.getValue().toString());
-                    }else if (type == 'l'){
-                        node = new STNode(STNodeType.LONG, (long)type_value_exp - (long)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test -= Long " + node.getValue().toString());
-                    }else {
-                        node = new STNode(STNodeType.FLOAT, (float)type_value_exp - (float)type_value_id);
-                        actualScope.put(id, node);
-                        System.out.println("test -= Float " + node.getValue().toString());
-                    }
-                    break;
-                }
-            }
-
-        }else {//asignacion a un arreglo
-                int index = (int) visit(ctx.unaryExpression().arrayIndexExpression().expression()).getValue();//index of the array
-                node = actualScope.get(ctx.unaryExpression().arrayIndexExpression().ID().getText());//getting the node id[] from SymbolTable
-                Object[] array = (Object[]) node.getValue();//saving the value of id[](couse the value is an array, see ArrayDeclaration)
-
-
-                //try catch
-            if (array[index] != null) {
-                try {
-                    type_value_exp = (int) exp_value;
-                    type_value_id = (int) array[index];
-                    type = 'i';
-                } catch (java.lang.NumberFormatException extInt) {
-                    try {
-                        type_value_exp = (double) exp_value;
-                        type_value_id = (double) array[index];
-                        type = 'd';
-                    } catch (java.lang.NumberFormatException extDouble) {
-                        try {
-                            type_value_exp = (long) exp_value;
-                            type_value_id = (long) array[index];
-                            type = 'l';
-                        } catch (java.lang.NumberFormatException extLong) {
-                            type_value_exp = (float) exp_value;
-                            type_value_id = (float) array[index];
-                            type = 'f';
-                        }
-
-                    }
-
-                }
-
-                switch (op){
+                switch (op) {
                     case "=": {
-                        array[index] = exp.getValue();//putting the new value on the right index
-                        node.setValue(array);//updating node id[index] with the new value
-                        actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                        System.out.println("test = array " + array[index].toString());
-                        break;
-                    }
-                    case "*=":{//array[index] = array[index]*exp.getValue
-                        if (type == 'i'){
-                            array[index] = (int)array[index] * (int)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test *= array " + node.getValue().toString());
-                        }else if (type == 'd'){
-                            array[index] = (double)array[index] * (double)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test *= array " + node.getValue().toString());
-                        }else if (type == 'l'){
-                            array[index] = (long)array[index] * (long)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test *= array " + node.getValue().toString());
-                        }else {
-                            array[index] = (float)array[index] * (float)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test *= array " + node.getValue().toString());
+                        if (exp.getType() == STNodeType.CHAR) {
+                            value = Double.valueOf(exp.getValue().toString().charAt(0));
+                        } else {
+                            value = ((Number) exp_value).doubleValue();
                         }
                         break;
                     }
-                    case "/=":{//array[index] = array[index]*exp.getValue
-                        if (type == 'i'){
-                            array[index] = (int)array[index] / (int)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test /= array " + node.getValue().toString());
-                        }else if (type == 'd'){
-                            array[index] = (double)array[index] / (double)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test /= array " + node.getValue().toString());
-                        }else if (type == 'l'){
-                            array[index] = (long)array[index] / (long)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test /= array " + node.getValue().toString());
-                        }else {
-                            array[index] = (float)array[index] / (float)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test /= array " + node.getValue().toString());
+                    case "*=": {
+                        if (exp.getType() == STNodeType.CHAR) {
+                            value = ((Number) id_value).doubleValue() * Double.valueOf(exp.getValue().toString().charAt(0));
+                        } else {
+                            value = ((Number) id_value).doubleValue() * ((Number) exp_value).doubleValue();
                         }
                         break;
                     }
-                    case "%=":{//array[index] = array[index]*exp.getValue
-                        if (type == 'i'){
-                            array[index] = (int)array[index] % (int)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test %= array " + node.getValue().toString());
-                        }else if (type == 'd'){
-                            array[index] = (double)array[index] % (double)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test %= array " + node.getValue().toString());
-                        }else if (type == 'l'){
-                            array[index] = (long)array[index] % (long)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test %= array " + node.getValue().toString());
-                        }else {
-                            array[index] = (float)array[index] % (float)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test %= array " + node.getValue().toString());
+                    case "/=": {
+                        if (exp.getType() == STNodeType.CHAR) {
+                            value = ((Number) id_value).doubleValue() / Double.valueOf(exp.getValue().toString().charAt(0));
+                        } else {
+                            value = ((Number) id_value).doubleValue() / ((Number) exp_value).doubleValue();
                         }
                         break;
                     }
-                    case "+=":{//array[index] = array[index]*exp.getValue
-                        if (type == 'i'){
-                            array[index] = (int)array[index] + (int)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test += array " + node.getValue().toString());
-                        }else if (type == 'd'){
-                            array[index] = (double)array[index] + (double)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test += array " + node.getValue().toString());
-                        }else if (type == 'l'){
-                            array[index] = (long)array[index] + (long)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test += array " + node.getValue().toString());
-                        }else {
-                            array[index] = (float)array[index] + (float)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test += array " + node.getValue().toString());
+                    case "%=": {
+                        if (exp.getType() == STNodeType.CHAR) {
+                            value = ((Number) id_value).doubleValue() % Double.valueOf(exp.getValue().toString().charAt(0));
+                        } else {
+                            value = ((Number) id_value).doubleValue() % ((Number) exp_value).doubleValue();
                         }
                         break;
                     }
-                    case "-=":{//array[index] = array[index]*exp.getValue
-                        if (type == 'i'){
-                            array[index] = (int)array[index] - (int)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test -= array " + node.getValue().toString());
-                        }else if (type == 'd'){
-                            array[index] = (double)array[index] - (double)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test -= array " + node.getValue().toString());
-                        }else if (type == 'l'){
-                            array[index] = (long)array[index] - (long)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test -= array " + node.getValue().toString());
-                        }else {
-                            array[index] = (float)array[index] - (float)exp_value;
-                            node.setValue(array);
-                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                            System.out.println("test -= array " + node.getValue().toString());
+                    case "+=": {
+                        if (exp.getType() == STNodeType.CHAR) {
+                            value = ((Number) id_value).doubleValue() + Double.valueOf(exp.getValue().toString().charAt(0));
+                        } else {
+                            value = ((Number) id_value).doubleValue() + ((Number) exp_value).doubleValue();
+                        }
+                        break;
+                    }
+                    case "-=": {
+                        if (exp.getType() == STNodeType.CHAR) {
+                            value = ((Number) id_value).doubleValue() - Double.valueOf(exp.getValue().toString().charAt(0));
+                        } else {
+                            value = ((Number) id_value).doubleValue() - ((Number) exp_value).doubleValue();
                         }
                         break;
                     }
                 }
 
-            }else {//si es null lo unico q puedo hacer es asignarle valor con =
-                if (op.charAt(0) == '=') {
-                    array[index] = exp.getValue();//putting the new value on the right index
-                    node.setValue(array);//updating node id[index] with the new value
-                    actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
-                    System.out.println("test = array " + array[index].toString());
+                if (id_type == STNodeType.DOUBLE) {
+                    actualScope.get(id).setValue((double) value);
+                    //System.out.println(value);
                 } else {
-                    System.out.println("op " + op);
-                    System.out.println("Operation denied over empty array");
+                    if (id_type == STNodeType.FLOAT) {
+                        actualScope.get(id).setValue((float) value);
+                       // System.out.println("out" + value);
+                    } else {
+                        if (id_type == STNodeType.LONG) {
+                            actualScope.get(id).setValue((long) value);
+                            //System.out.println(value);
+                        } else {
+                            if (id_type == STNodeType.SHORT) {
+                                actualScope.get(id).setValue((short) value);
+                               // System.out.println(value);
+                            } else {
+                                if (id_type == STNodeType.INT) {//id_type != char
+                                    actualScope.get(id).setValue((int) value);
+                                   // System.out.println("out " + actualScope.get(id).getValue().toString());
+                                }
+                            }
+                        }
+                    }
                 }
 
+            } else {
+                throw new NumberFormatException("You can't save a value on a smaller size variable");
             }
-            }
 
+        } else {//Array assignment
+            //System.out.println("Visiting array Assignment");
+            int index = (int) visit(ctx.unaryExpression().arrayIndexExpression().expression()).getValue();//index of the array
+            node = actualScope.get(ctx.unaryExpression().arrayIndexExpression().ID().getText());//getting the node id[] from SymbolTable
+            Object[] array = (Object[]) node.getValue();//saving the value of id[](couse the value is an array, see ArrayDeclaration)
 
-        /*
-        if (ctx.unaryExpression().ID() != null) {
-            switch (ctx.assignmentOperator().getText()) {
-                case "=": {
-                    actualScope.put(id, exp);
-                    System.out.println("test = " + exp.getValue().toString());
-                    break;
-                }
-                case "*=": {//add mult in here
-                    try {//EN CASO QUE PONGAN CHAR YA LOS PARSEA COMO INT
-                        int value = (int) exp_value * (int) id_value;
-                        node = new STNode(STNodeType.INT, value);
-                        actualScope.put(id, node);
-                        System.out.println("test *= " + node.getValue().toString());
-                    } catch (java.lang.NumberFormatException exInt) {
-                        try {
-                            double value = (double) exp_value * (double) id_value;
-                            node = new STNode(STNodeType.DOUBLE, value);
-                            actualScope.put(id, node);
-                            System.out.println("test *= " + node.getValue().toString());
-                        } catch (java.lang.NumberFormatException exDouble) {
-                            try{
-                                float value = (float) exp_value * (float) id_value;
-                                node = new STNode(STNodeType.FLOAT, value);
-                                actualScope.put(id, node);
-                                System.out.println("test *= " + node.getValue().toString());
-                            }catch (java.lang.NumberFormatException exFloat){
-                                    long value = (long) exp_value * (long) id_value;
-                                    node = new STNode(STNodeType.LONG, value);
-                                    actualScope.put(id, node);
-                                    System.out.println("test *= " + node.getValue().toString());
+            if (node.getType().compareTo(exp.getType()) > 0 || node.getType().compareTo(exp.getType()) == 0) {
 
-                            }//FALTA PARA SHORT PQ DA ERROR
-
-
-                        }
-
+                if (op.charAt(0) == '=') {
+                    if (exp.getType() == STNodeType.CHAR) {
+                        value = Double.valueOf(exp.getValue().toString().charAt(0));
+                    } else {
+                        value = ((Number) exp.getValue()).doubleValue();
                     }
-                    break;
-                }
-                case "/=": {//add mult in here
-                    try {//EN CASO QUE PONGAN CHAR YA LOS PARSEA COMO INT
-                        int value = (int) exp_value / (int) id_value;
-                        node = new STNode(STNodeType.INT, value);
-                        actualScope.put(id, node);
-                        System.out.println("test /= " + node.getValue().toString());
-                    } catch (java.lang.NumberFormatException exInt) {
-                        try {
-                            double value = (double) exp_value / (double) id_value;
-                            node = new STNode(STNodeType.DOUBLE, value);
-                            actualScope.put(id, node);
-                            System.out.println("test /= " + node.getValue().toString());
-                        } catch (java.lang.NumberFormatException exDouble) {
-                            try{
-                                float value = (float) exp_value / (float) id_value;
-                                node = new STNode(STNodeType.FLOAT, value);
-                                actualScope.put(id, node);
-                                System.out.println("test /= " + node.getValue().toString());
-                            }catch (java.lang.NumberFormatException exFloat){
-                                long value = (long) exp_value / (long) id_value;
-                                node = new STNode(STNodeType.LONG, value);
-                                actualScope.put(id, node);
-                                System.out.println("test /= " + node.getValue().toString());
-
-                            }//FALTA PARA SHORT PQ DA ERROR
 
 
+                } else {
+                    if (array[index] != null) {
+                        switch (op) {
+                            case "*=": {
+                                if (exp.getType() == STNodeType.CHAR) {
+                                    System.out.println(Double.valueOf(exp.getValue().toString().charAt(0)));
+                                    System.out.println(array[index].toString());
+                                    value = ((Number) array[index]).doubleValue() * Double.valueOf(exp.getValue().toString().charAt(0));
+                                } else {
+                                    value = ((Number) array[index]).doubleValue() * ((Number) exp.getValue()).doubleValue();
+                                }
+                                break;
+                            }
+                            case "/=": {
+                                if (exp.getType() == STNodeType.CHAR) {
+                                    value = ((Number) array[index]).doubleValue() / Double.valueOf(exp.getValue().toString().charAt(0));
+                                } else {
+                                    value = ((Number) array[index]).doubleValue() / ((Number) exp.getValue()).doubleValue();
+                                }
+                                break;
+                            }
+                            case "%=": {
+                                if (exp.getType() == STNodeType.CHAR) {
+                                    value = ((Number) array[index]).doubleValue() % Double.valueOf(exp.getValue().toString().charAt(0));
+                                } else {
+                                    value = ((Number) array[index]).doubleValue() % ((Number) exp.getValue()).doubleValue();
+                                }
+                                break;
+                            }
+                            case "+=": {
+                                if (exp.getType() == STNodeType.CHAR) {
+                                    value = ((Number) array[index]).doubleValue() + Double.valueOf(exp.getValue().toString().charAt(0));
+                                } else {
+                                    value = ((Number) array[index]).doubleValue() + ((Number) exp.getValue()).doubleValue();
+                                }
+                                break;
+                            }
+                            case "-=": {
+                                if (exp.getType() == STNodeType.CHAR) {
+                                    value = ((Number) array[index]).doubleValue() - Double.valueOf(exp.getValue().toString().charAt(0));
+                                } else {
+                                    value = ((Number) array[index]).doubleValue() - ((Number) exp.getValue()).doubleValue();
+                                }
+                                break;
+                            }
                         }
-
-                    }
-                    break;
+                    } else
+                        throw new NullPointerException("You can't execute an arithmetic operation with a null value");
                 }
-                case "+=": {//add mult in here
-                    try {//EN CASO QUE PONGAN CHAR YA LOS PARSEA COMO INT
-                        int value = (int) exp_value + (int) id_value;
-                        node = new STNode(STNodeType.INT, value);
-                        actualScope.put(id, node);
-                        System.out.println("test += " + node.getValue().toString());
-                    } catch (java.lang.NumberFormatException exInt) {
-                        try {
-                            double value = (double) exp_value + (double) id_value;
-                            node = new STNode(STNodeType.DOUBLE, value);
-                            actualScope.put(id, node);
-                            System.out.println("test += " + node.getValue().toString());
-                        } catch (java.lang.NumberFormatException exDouble) {
-                            try{
-                                float value = (float) exp_value + (float) id_value;
-                                node = new STNode(STNodeType.FLOAT, value);
-                                actualScope.put(id, node);
-                                System.out.println("test += " + node.getValue().toString());
-                            }catch (java.lang.NumberFormatException exFloat){
-                                long value = (long) exp_value + (long) id_value;
-                                node = new STNode(STNodeType.LONG, value);
-                                actualScope.put(id, node);
-                                System.out.println("test += " + node.getValue().toString());
 
-                            }//FALTA PARA SHORT PQ DA ERROR
+                if (node.getType() == STNodeType.DOUBLE) {
+                    array[index] = (double) value;
+                    node.setValue(array);
+                    actualScope.get(ctx.unaryExpression().arrayIndexExpression().ID().getText()).setValue(node.getValue());
+                   // System.out.println("ArrayOut: " + actualScope.get(ctx.unaryExpression().arrayIndexExpression().ID().getText()).getValue().toString());
 
-
+                } else {
+                    if (node.getType() == STNodeType.FLOAT) {
+                        array[index] = (float) value;
+                        node.setValue(array);
+                        actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
+                        //System.out.println("float value on array = " + node.getValue());
+                    } else {
+                        if (node.getType() == STNodeType.LONG) {
+                            array[index] = (long) value;
+                            node.setValue(array);
+                            actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
+                            //System.out.println(node.getValue());
+                        } else {
+                            if (node.getType() == STNodeType.SHORT) {
+                                array[index] = (short) value;
+                                node.setValue(array);
+                                actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
+                                //System.out.println(node.getValue());
+                            } else {
+                                if (node.getType() == STNodeType.INT) {//id_type != char
+                                    array[index] = (int) value;
+                                    node.setValue(array);
+                                    actualScope.put(ctx.unaryExpression().arrayIndexExpression().ID().getText(), node);
+                                   // System.out.println(array[index].toString());
+                                }
+                            }
                         }
-
                     }
-                    break;
                 }
-                case "-=": {//add mult in here
-                    try {//EN CASO QUE PONGAN CHAR YA LOS PARSEA COMO INT
-                        int value = (int) exp_value - (int) id_value;
-                        node = new STNode(STNodeType.INT, value);
-                        actualScope.put(id, node);
-                        System.out.println("test -= " + node.getValue().toString());
-                    } catch (java.lang.NumberFormatException exInt) {
-                        try {
-                            double value = (double) exp_value - (double) id_value;
-                            node = new STNode(STNodeType.DOUBLE, value);
-                            actualScope.put(id, node);
-                            System.out.println("test -= " + node.getValue().toString());
-                        } catch (java.lang.NumberFormatException exDouble) {
-                            try{
-                                float value = (float) exp_value - (float) id_value;
-                                node = new STNode(STNodeType.FLOAT, value);
-                                actualScope.put(id, node);
-                                System.out.println("test -= " + node.getValue().toString());
-                            }catch (java.lang.NumberFormatException exFloat){
-                                long value = (long) exp_value - (long) id_value;
-                                node = new STNode(STNodeType.LONG, value);
-                                actualScope.put(id, node);
-                                System.out.println("test -= " + node.getValue().toString());
+            } else
+                throw new NumberFormatException("You can't save a value on a smaller size variable");
 
-                            }//FALTA PARA SHORT PQ DA ERROR
-
-
-                        }
-
-                    }
-                    break;
-                }
-                case "%=": {//add mult in here
-                    try {//EN CASO QUE PONGAN CHAR YA LOS PARSEA COMO INT
-                        int value = (int) exp_value % (int) id_value;
-                        node = new STNode(STNodeType.INT, value);
-                        actualScope.put(id, node);
-                        System.out.println("test %= " + node.getValue().toString());
-                    } catch (java.lang.NumberFormatException exInt) {
-                        try {
-                            double value = (double) exp_value % (double) id_value;
-                            node = new STNode(STNodeType.DOUBLE, value);
-                            actualScope.put(id, node);
-                            System.out.println("test %= " + node.getValue().toString());
-                        } catch (java.lang.NumberFormatException exDouble) {
-                            try{
-                                float value = (float) exp_value % (float) id_value;
-                                node = new STNode(STNodeType.FLOAT, value);
-                                actualScope.put(id, node);
-                                System.out.println("test %= " + node.getValue().toString());
-                            }catch (java.lang.NumberFormatException exFloat){
-                                long value = (long) exp_value % (long) id_value;
-                                node = new STNode(STNodeType.LONG, value);
-                                actualScope.put(id, node);
-                                System.out.println("test %= " + node.getValue().toString());
-
-                            }//FALTA PARA SHORT PQ DA ERROR
-
-
-                        }
-
-                    }
-                    break;
-                }
-
-            }//end switch
 
         }
 
-           /*
-
-        }*/
 
         return null;
     }
+
 
     //Checked
     @Override
@@ -937,8 +779,282 @@ public class VisitorInterpreter extends CLangBaseVisitor<STNode> {
 
     }
 
+    // TODO: void return type declaration
+
+    //Checked
+    @Override
+    public STNode visitFunctionDeclaration(CLangParser.FunctionDeclarationContext ctx) {
+        HashMap<String, STNodeType> paramList = new HashMap<>();
+        STNode node;
+        int c = 0;
+        if (ctx.TYPE() != null) {
+
+            if (ctx.parameterList() != null) {
+                for (int i = 0; i < ctx.parameterList().getChildCount(); i++) {
 
 
+                    if (ctx.parameterList().getChild(i).toString().charAt(0) != ',') {
+                        paramList.put(ctx.parameterList().parameterDeclaration(c).ID().getText(), STNodeType.valueOf(ctx.parameterList().parameterDeclaration(c).TYPE().getText().toUpperCase()));
+
+                        ++c;
+                    } else continue;
+
+                }
+                //System.out.println("Fuction with parameterList saved in here");
+                globalScope.put(ctx.ID().getText(), new STNode(STNodeType.valueOf(ctx.TYPE().getText().toUpperCase()), paramList, globalScope));//saving
+            } else {
+                if (ctx.typeList() != null) {
+                    node = visit(ctx.typeList());
+                    globalScope.put(ctx.ID().getText(), node);
+                } else {
+
+                    globalScope.put(ctx.ID().getText(), new STNode(STNodeType.valueOf(ctx.TYPE().getText().toUpperCase()), globalScope));
+                   // System.out.println("Fuction without parameters: " + globalScope.get(ctx.ID().getText()).getType().toString());
+                }
+            }
+        }
+
+        return null;
+    }
+
+    //Checked
+    @Override
+    public STNode visitFunctionDefinition(CLangParser.FunctionDefinitionContext ctx) {
+
+        if (ctx.ID().getText().compareTo("main") == 0) {
+            for (int i = 0; i < ctx.statementCombination().statement().size(); ++i)
+                visit(ctx.statementCombination().statement(i));
+        }
+        userMethods.put(ctx.ID().getText(), ctx);
+        return null;
+    }
+
+    //Checked
+    @Override
+    public STNode visitExprFunctionCall(CLangParser.ExprFunctionCallContext ctx) {
+        STNode out = null;
+        List<String> parametersId = new ArrayList<String>();
+        FunctionDefinitionContext funcContext = (FunctionDefinitionContext) userMethods.get(ctx.functionCall().ID().getText());
+        int c = 0;
+        int v = 0;
+        Scope<STNode> current = actualScope;
+        actualScope = new Scope<STNode>(actualScope);
+
+        HashMap<String, STNodeType> paramList = new HashMap<>();
+        for (int i = 0; i < funcContext.parameterList().getChildCount(); i++) {
+            if (funcContext.parameterList().getChild(i).toString().charAt(0) != ',') {
+                paramList.put(funcContext.parameterList().parameterDeclaration(v).ID().getText(), STNodeType.valueOf(funcContext.parameterList().parameterDeclaration(v).TYPE().getText().toUpperCase()));
+                ++v;
+            } else
+                continue;
+        }
+
+        paramList.forEach((id, type) -> {
+            parametersId.add(id);
+            System.out.println(id);
+        });
+
+        for (int i = 0; i < ctx.functionCall().expressionList().getChildCount(); ++i) {
+            if (ctx.functionCall().expressionList().getChild(i).toString().charAt(0) != ',') {
+                //System.out.println("asigning parameters values");
+                actualScope.put(parametersId.get(c), new STNode(visit(ctx.functionCall().expressionList().expression(c))));
+                ++c;
+            } else
+                continue;
+        }
+
+        for (int i = 0; i < funcContext.statementCombination().statement().size(); ++i) {
+            out = visit(funcContext.statementCombination().statement(i));
+
+        }
+
+        actualScope = current;
+
+        return out;
+    }
+
+    //Checked
+    @Override
+    public STNode visitParameterDeclaration(CLangParser.ParameterDeclarationContext ctx) {
+
+        STNode node = new STNode(STNodeType.valueOf(ctx.TYPE().getText().toUpperCase()), globalScope);//the actualScope here is the scope of the fuction definition
+        return node;
+    }
+
+    //Checked
+    @Override
+    public STNode visitTypeList(CLangParser.TypeListContext ctx) {
+        int c = 0;
+        FunctionDeclarationContext parent_ctx = (FunctionDeclarationContext) ctx.getParent();
+        List<STNodeType> typeList = new ArrayList<STNodeType>();
+        for (int i = 0; i < ctx.getChildCount(); i++) {
+            if (ctx.getChild(i).toString().charAt(0) != ',') {
+                System.out.println(ctx.TYPE(c));
+                typeList.add(STNodeType.valueOf(ctx.TYPE(c).getText().toUpperCase()));
+                ++c;
+            } else
+                continue;
+
+        }
+
+        return new STNode(STNodeType.valueOf(parent_ctx.TYPE().getText().toUpperCase()), typeList, globalScope);
+    }
+
+    //Used in CompoundStatement
+    @Override
+    public STNode visitStatementCombination(CLangParser.StatementCombinationContext ctx) {
+        for (StatementContext state : ctx.statement()) {
+            visit(state);
+        }
+        return null;
+    }
+
+    //Used in CompoundStatement
+    @Override
+    public STNode visitDeclarCombination(CLangParser.DeclarCombinationContext ctx) {
+        STNode node = null;
+        for (DeclarationContext dcl : ctx.declaration()) {
+            node = visit(dcl);
+        }
+        return node;
+    }
+
+    //Checked
+    @Override
+    public STNode visitStatement(CLangParser.StatementContext ctx) {
+        STNode node = null;
+
+        if (ctx.compoundStatement() != null)
+            node = visit(ctx.compoundStatement());
+        else {
+            if (ctx.expression() != null) {
+                node = visit(ctx.expression());
+            } else {
+                if (ctx.declaration() != null) {
+                    node = visit(ctx.declaration());
+                } else {
+                    if (ctx.ifStatement() != null) {
+                        node = visit(ctx.ifStatement());
+                    } else {
+                        if (ctx.whileStatement() != null) {
+                            node = visit(ctx.whileStatement());
+                        } else {
+                            if (ctx.printfStatement() != null) {
+                                node = visit(ctx.printfStatement());
+                            } else {
+                                if (ctx.returnStatement() != null) {
+                                    node = visit(ctx.returnStatement());
+                                } else {
+                                    if (ctx.scanfStatement() != null) {
+                                        node = visit(ctx.scanfStatement());
+                                    } else {
+                                        if (ctx.forStatement() != null) {
+                                            node = visit(ctx.forStatement());
+                                        } else {
+                                            if (ctx.breakStatement() != null)
+                                                node = visit(ctx.breakStatement());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+            }
+
+        }
+        return node;
+    }
+
+    //Checked
+    @Override
+    public STNode visitReturnStatement(CLangParser.ReturnStatementContext ctx) {
+        return visit(ctx.expression());
+    }
+
+    //Only break works
+    @Override
+    public STNode visitBreakStatement(CLangParser.BreakStatementContext ctx) {
+        if (ctx.BREAK() != null) {
+            breakVis = true;
+            return new STNode(STNodeType.INT, Integer.MIN_VALUE);
+        }
+        return null;
+    }
+
+    //Checked
+    @Override
+    public STNode visitExprUnaryOpPre(ExprUnaryOpPreContext ctx) {
+        STNode node = actualScope.get(ctx.ID().getText());
+
+        STNode newNode = new STNode(node);
+        switch (ctx.unaryOperator.getText()) {
+            case "++":
+                newNode.setValue((int) newNode.getValue() + 1);
+                actualScope.put(ctx.ID().getText(), newNode);
+                break;
+            case "--":
+                newNode.setValue((int) newNode.getValue() - 1);
+                actualScope.put(ctx.ID().getText(), newNode);
+        }
+        return node;
+    }
+    //Checked
+   @Override
+    public STNode visitExprUnaryOpPost(ExprUnaryOpPostContext ctx) {
+
+        STNode node = actualScope.get(ctx.ID().getText());
+
+        switch (ctx.unaryOperator.getText()) {
+            case "-":
+                node.setValue((-1) * ((int) node.getValue()));
+                break;
+            case "++":
+                node.setValue((int) node.getValue() + 1);
+                actualScope.put(ctx.ID().getText(), node);
+                break;
+            case "--":
+                node.setValue((int) node.getValue() - 1);
+                actualScope.put(ctx.ID().getText(), node);
+                break;
+            case "!":
+                if ((int) node.getValue() == 0) {
+                    node.setValue(1);
+                } else {
+                    node.setValue(0);
+                }
+            case "~": //NOT bit a bit
+                node.setValue(~((long) node.getValue()));
+                actualScope.put(ctx.ID().getText(), node);
+        }
+        return node;
+    }
+
+    //Checked
+    @Override
+    public STNode visitCompoundStatement(CLangParser.CompoundStatementContext ctx) {
+        Scope<STNode> current = actualScope;
+        actualScope = new Scope<STNode>(actualScope);
+        STNode node = null;
+        if (ctx.declarCombination() != null && ctx.statementCombination() != null) {
+            visit(ctx.declarCombination());
+            node = visit(ctx.statementCombination());
+
+        } else {
+            if (ctx.statementCombination() != null) {
+                node = visit(ctx.statementCombination());
+            } else {
+                if (ctx.declarCombination() != null) {
+                    visit(ctx.declarCombination());
+                }
+
+            }
 
 
+        }
+        actualScope = current;
+        return node;
+    }
 }

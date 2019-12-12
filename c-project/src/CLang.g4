@@ -14,10 +14,9 @@ definition  :   functionDefinition
             |   declaration
             ;
 
-declaration :   TYPE (varWithExpDeclaration | varWithoutExpDeclaration) (',' (varWithoutExpDeclaration |varWithExpDeclaration))* ';'                                            #VarDeclaration
+declaration :   TYPE (varWithExpDeclaration | varWithoutExpDeclaration) (',' (varWithoutExpDeclaration |varWithExpDeclaration))* ';'        #VarDeclaration
 
-            |   TYPE ID '[' expression ']' (',' ID '[' expression ']')* ';'                                             #ArrayDeclaration
-
+            |   TYPE ID '[' expression ']' (',' ID '[' expression ']')* ';'                                                                 #ArrayDeclaration
             ;
 
 varWithExpDeclaration:   ID  '=' expression ;
@@ -28,13 +27,15 @@ varWithoutExpDeclaration:     ID ;
 
 functionDeclaration : (TYPE | 'void') ID '(' (parameterList | typeList)? ')' ';'; // int max(int a, int b); o int f(int, double);
 
-functionDefinition  : (TYPE | 'void') ID '(' parameterList? ')' '{' statement* '}'; // int max(int a, int b){ return a>b?a:b;}
+functionDefinition  : (TYPE | 'void') ID '(' parameterList? ')' '{' statementCombination '}'; // int max(int a, int b){ return a>b?a:b;}
 
 parameterList : parameterDeclaration ( ',' parameterDeclaration)*; // int a, int b
 
 parameterDeclaration : TYPE ID ; // int a
 
 typeList : TYPE ( ',' TYPE)*; //int, double
+
+statementCombination: statement*;
 
 statement :     compoundStatement
             |   expression ';'
@@ -49,16 +50,17 @@ statement :     compoundStatement
 			;
 
 compoundStatement :     '{' '}'
-                    |   '{' statement+ '}'
-                    |   '{' declaration+'}'
-                    |   '{' declaration+ statement+ '}'
+                    |   '{' statementCombination '}'
+                    |   '{' declarCombination'}'
+                    |   '{' declarCombination statementCombination '}'
                     ;
+declarCombination: declaration+ ;
 
 returnStatement :   'return' expression?;
 
 breakStatement  :   BREAK | CONTINUE;
 
-//NEW
+
 printfStatement :   PRINTF '('  expression  ')';
 
 scanfStatement:   SCANF '(' argumentScanf ')' ;
@@ -91,7 +93,7 @@ expressionList : expression ( ',' expression)* ;
 
 expression :    '(' expression ')'                                         #ExprParenthesis
             |   functionCall                                               #ExprFunctionCall
-            |   assignmentExpression                                       #ExprAssignment
+
             |   arrayIndexExpression                                       #ExprArrayIndex
             |   left=expression op=('*'|'/'|'%') right=expression          #ExprArit
             |   left=expression op=('+'|'-') right=expression              #ExprArit
@@ -99,23 +101,19 @@ expression :    '(' expression ')'                                         #Expr
             |   left=expression op=('=='|'!=')  right=expression           #ExprRel
             |   expression '&&' expression                                 #ExprAnd
             |   expression '||' expression                                 #ExprOr
-            |   unaryOperator ID                                           #ExprUnaryOp
-            |   ID unaryOperator                                           #ExprUnaryOp
+            |   unaryOperator=('+'|'-'|'++'|'--'|'~'|'!') ID               #ExprUnaryOpPost
+            |   ID unaryOperator=('++'|'--')                               #ExprUnaryOpPre
             |   constant                                                   #ExprCnt
             |   ID                                                         #ExprId
+            |   assignmentExpression                                       #ExprAssignment
             ;
-/* int a[expression], b[]
-expression -- aarayIndexExp = id [expre]
 
-assigExp-- unaryExp opAsig expression
-unaryExp-- id | arrayIndexExp
-
-a[5] = 6+4*/
 constant    :  INT_CONSTANT                                                #IntCnt
             |  CHAR_CONSTANT                                               #CharCnt
             |  FLOAT_CONSTANT                                              #FloatCnt
             |  STRING_LITERAL                                              #StrLCnt
             ;
+
 
 functionCall : ID '(' expressionList? ')' ;
 
@@ -133,9 +131,10 @@ ifStatement : IF '(' expression ')' (';' | statement) (ELSE (';' | statement ))?
 
 whileStatement : WHILE '(' expression ')' (';' | statement) ;
 
-forStatement : FOR '(' expressionList? ';' expression? ';' expression? ')' (';' | statement) ;
+forStatement : FOR '(' expressionList? ';' condExpression? ';' iterExpression? ')' (';' | statement) ;
 
-unaryOperator : '+' | '-' | '++' | '--' | '~' | '!' ;
+condExpression: expression;
+iterExpression: expression;
 
 
 // Scanner rules
