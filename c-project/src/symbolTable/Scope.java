@@ -3,7 +3,7 @@ package symbolTable;
 public class Scope<Symbol> {
 
     private final SymbolTable<STNode> symbolTable;
-    private Scope<Symbol> parent;
+    public Scope<Symbol> parent;
 
     public Scope() {
         symbolTable = new SymbolTable<>();
